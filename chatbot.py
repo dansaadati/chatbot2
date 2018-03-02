@@ -165,8 +165,11 @@ class Chatbot:
       titleReg = re.compile('[\"](.*?)[\"]')
       results = re.findall(titleReg, line)
 
+      # too many movies quoted
       if len(results) > 1:
         return -1, None
+      
+      # nothing in quotes
       if len(results) == 0:
         # Creative mode: find title without quotes
         titles = []
@@ -220,34 +223,44 @@ class Chatbot:
         for title in titles:
           title = title.lower()
           for entryTitle, index in allTitlesLowerCase:
-            if(entryTitle.find(title) == 0):
-              if(entryTitle.split(' ')[0] == title.split(' ')[0]):
+            if entryTitle.find(title) == 0:
+              if entryTitle.split(' ')[0] == title.split(' ')[0]:
                 resultList.append((index, self.titles[index][0]))
-          if(len(resultList) > 0):
+          if len(resultList) > 0:
             break
-        if(len(resultList) == 1):
+        if len(resultList) == 1:
           return resultList[0][0], self.titles[resultList[0][0]][0]
-        elif(len(resultList) > 1):
+        elif len(resultList) > 1:
           return -4, resultList
         return -2, None
       
 
+      # one title is found in quotes
       resultList = []
       allTitlesLowerCase = []
       for i in xrange(0, len(self.titles)):
         results[0] = results[0].lower()
-        if(results[0] == self.titles[i][0].lower()):
+        if results[0] == self.titles[i][0].lower():
           return i, self.titles[i][0]
-        if(self.titles[i][0].lower().find(results[0]) == 0):
-          if(results[0].split(' ')[0] == self.titles[i][0].lower().split(' ')[0]):
+        if self.titles[i][0].lower().find(results[0]) == 0:
+          if results[0].split(' ')[0] == self.titles[i][0].lower().split(' ')[0]:
             resultList.append((i, self.titles[i][0]))
 
-      if(len(resultList) == 1):
+      # there is one correct title found
+      if len(resultList) == 1:
         return resultList[0][0], self.titles[resultList[0][0]][0]
-      elif(len(resultList) > 1):
+
+      # ambiguous, could be more than one
+      elif len(resultList) > 1:
         return -4, resultList
+      
+      # nothing found
       else:
-        return -3, None # TODO : Handle ERROR
+        # CREATIVE MODE: spell checking
+        spellcheckIndex, spellcheckResult = self.spellcheck(results[0])
+        if spellcheckIndex != -1:
+          return spellcheckIndex, spellcheckResult
+        return -3, None # TODO: Handle ERROR
 
     def lemonizeLine(self, input):
       processInput = []
@@ -258,18 +271,18 @@ class Chatbot:
       return ' '.join(processInput)
 
     def disambiguateLine(self, input):
-      if(input == "Nevermind"):
+      if input == "Nevermind":
         self.disambiguateList = []
         self.disambiguate = False
         return -1, None
       titleNoYearArr = []
       for index, title in self.disambiguateList:
-        if(input == title):
+        if input == title:
           return index, self.titles[index][0]
         titleArr = title.split(' ')
         titleNoYear = ""
         year = ""
-        if(titleArr[-1][0] == "(" and titleArr[-1][5] == ")"):
+        if titleArr[-1][0] == "(" and titleArr[-1][5] == ")":
           year = titleArr[-1][1:5]
           titleArr = titleArr[0:-1]
           titleNoYear = ' '.join(titleArr)
@@ -312,7 +325,7 @@ class Chatbot:
               title2 = title[matchLoc + len(input):]
               title1Arr = title1.split(' ')
               title2Arr = title2.split(' ')
-              if(title1Arr[0] == title2Arr[0]):
+              if title1Arr[0] == title2Arr[0]:
                 return -2, None
 
       if(result == ""): #Could not find
@@ -336,7 +349,6 @@ class Chatbot:
       else:
         response = 'processed %s in starter mode' % input
 
-
       ignoreValidation = False
       if(input == "Yes" or input == "No"):
         ignoreValidation = True
@@ -344,7 +356,6 @@ class Chatbot:
       title = None
       titleIndex = -6
 
-        
       if self.disambiguate:
         titleIndex, title = self.disambiguateLine(input)
         if(titleIndex == -1):
@@ -364,19 +375,18 @@ class Chatbot:
           self.disambiguate = False
           self.disambiguateList = []
 
-
       if not ignoreValidation:
         titleIndex, title = self.grabAndValidateMovieTitle(input)
       # TODO - HANDLE ERRORS FOR TITLE RETRIEVAL
-      if(titleIndex == -1):
+      if titleIndex == -1:
         return "Looks like you may have multiple titles there! Please respond with just one movie at a time."
-      if(titleIndex == -2):
-        if(len(self.currentUserRatings) < self.minimumDataPoints):
+      if titleIndex == -2:
+        if len(self.currentUserRatings) < self.minimumDataPoints:
           return "Please tell me a bit more about movies you've seen. Remember to surround movie titles with quotation marks!"
-      if(titleIndex == -3):
+      if titleIndex == -3:
         return "I could not seem to find that movie. Please double check that you entered a valid movie or try another!"
 
-      if(titleIndex == -4):
+      if titleIndex == -4:
         # Set flag to disambigate
         response = "Hmm...I don't know what you mean exactly. I found these matches: "
         for result in title:
@@ -386,24 +396,21 @@ class Chatbot:
         self.disambiguateList = title
         return response
 
-
-
-
-      if(len(self.currentUserRatings) >= self.minimumDataPoints):
-        if(input == "No"):
+      if len(self.currentUserRatings) >= self.minimumDataPoints:
+        if input == "No":
           response = "Okay. Tell me a bit more about movies you've watched so I can make better recommendations."
           return response
-        if(input == "Yes"):
+        if input == "Yes":
           response = "You might enjoy "
       # ---> User inputs invalid title
       # ---> User inputs no title
       # ---> User inputs too many titles
 
       # IF VALID/NO ERRORS, EVALUATE SENTIMENT
-      if(title != None):
+      if title != None:
         sentiment = self.evaluateSentiment(input)
       else:
-        if(input != "Yes" and input != "No"):
+        if input != "Yes" and input != "No":
           return "Do not understand"    
 
       # ---> User feels positively
@@ -411,11 +418,11 @@ class Chatbot:
       # ---> TODO FOR CREATIVE: Maybe have a spectrum of emotion. 
 
       # MAP THE TITLE TO SENTIMENT
-      if(title != None): #Only update matrix if they input a movie
+      if title != None: #Only update matrix if they input a movie
         self.currentUserRatings.append((titleIndex, 1 if sentiment == 'pos' else -1))
         self.recommendCount = 0
-      if(len(self.currentUserRatings) < self.minimumDataPoints and title != None):
-        if(sentiment == 'pos'):
+      if len(self.currentUserRatings) < self.minimumDataPoints and title != None:
+        if sentiment == 'pos':
           response = "Glad to hear you had good things to say about " + title + "! Tell me a bit more about other movies you've watched!"
         else:
           response = "Oh, I'll keep note that you weren't really feeling " + title + ". Please tell me a bit more about another movie you've watched."
@@ -427,8 +434,6 @@ class Chatbot:
         else:
           response = "Oh, that's disappointing. I'll remember how you felt about " + title + "."
         return response + " Would you like a movie recommendation? (Yes/No)"
-
-
 
       if len(self.currentUserRatings) >= self.minimumDataPoints:
         # at this point, we can append a recommendation to the user
@@ -442,6 +447,42 @@ class Chatbot:
 
       return response
 
+    def spellcheck(self, possibleMovieTitle):
+      potentialTitleWords = possibleMovieTitle.split(' ')
+      for titleIndex, title in enumerate(self.titles): 
+        currentTitleWordsWithYear = title[0].split(' ')
+        currentTitleWordsWithoutYear = currentTitleWordsWithYear[:-1]
+
+        if len(potentialTitleWords) != len(currentTitleWordsWithYear) and len(potentialTitleWords) != len(currentTitleWordsWithoutYear):
+          continue
+
+        movieFits = True
+        for index, word in enumerate(currentTitleWordsWithoutYear):
+          if self.edit_distance(word.lower(), potentialTitleWords[index]) > 2:
+            movieFits = False
+            break
+
+        if movieFits:
+          return titleIndex, ' '.join(currentTitleWordsWithYear)
+
+      return -1, ''
+
+    # LEVENSHTEIN DISTANCE ALGORITHM
+    def edit_distance(self, s1, s2):
+        m = len(s1) + 1
+        n = len(s2) + 1
+
+        tbl = {}
+        for i in range(m):
+          tbl[i,0] = i
+        for j in range(n):
+          tbl[0,j] = j
+        for i in range(1, m):
+            for j in range(1, n):
+                cost = 0 if s1[i-1] == s2[j-1] else 1
+                tbl[i,j] = min(tbl[i, j-1]+1, tbl[i-1, j]+1, tbl[i-1, j-1] + cost)
+
+        return tbl[i,j]
 
     #############################################################################
     # 3. Movie Recommendation helper functions                                  #

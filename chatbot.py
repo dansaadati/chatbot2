@@ -318,6 +318,17 @@ class Chatbot:
         for title in titles:
           title = title.lower()
           for entryTitle, index in allTitlesLowerCase:
+            if(title == entryTitle):
+
+              count = 0
+              for otherTitle, index2 in allTitlesLowerCase:
+                if(otherTitle == title):
+                  count = count + 1
+              if(count == 1):
+                return index, self.titles[index][0]
+              else:
+                resultList.append((index, self.titles[index][0]))
+
             if entryTitle.find(title) == 0:
               if entryTitle.split(' ')[0] == title.split(' ')[0]:
                 resultList.append((index, self.titles[index][0]))
@@ -377,11 +388,16 @@ class Chatbot:
         return -1, None
       titleNoYearArr = []
       for index, title in self.disambiguateList:
+        if(title == ''):
+          continue
         if input == title:
           return index, self.titles[index][0]
         titleArr = title.split(' ')
         titleNoYear = ""
         year = ""
+        if(titleArr[-1] == ''):
+          titleArr[-1] = titleArr[-2]
+          titleArr = titleArr[:-1]  #Takes empty space
         if titleArr[-1][0] == "(" and titleArr[-1][5] == ")":
           year = titleArr[-1][1:5]
           titleArr = titleArr[0:-1]
@@ -500,10 +516,11 @@ class Chatbot:
         return response
 
       if len(self.currentUserRatings) >= self.minimumDataPoints:
-        if input == "No":
+        if input.lower() == "No".lower():
           response = "Of course, whatever you say. Tell me a bit more about movies you've watched so I can make better recommendations."
+          response += "\n I can also recommend a random movie. Just say: Random!"
           return response
-        if input == "Yes":
+        if input.lower() == "Yes".lower():
           response = "I GOT IT! You might enjoy "
 
       # IF VALID/NO ERRORS, EVALUATE SENTIMENT
@@ -516,6 +533,8 @@ class Chatbot:
           sentiment, sampleResponse = self.evaluateSentiment(title, input, False)
       else:
         if input.lower() != "Yes".lower() and input.lower() != "No".lower():
+          if(input.lower() == "Random!".lower()):
+            print("Returning a random movie")
           return "Hmm, it's been an off day for me. Can you clarify what you meant?"    
 
       # MAP THE TITLE TO SENTIMENT

@@ -10,6 +10,7 @@ import math
 import numpy as np
 import heapq
 import re
+import random
 from movielens import ratings
 from random import randint
 from deps.PorterStemmer import PorterStemmer
@@ -45,6 +46,20 @@ class Chatbot:
       self.titleIndex = -1
       self.sentimentReprompt = False
 
+      self.randomMode = False
+
+
+      self.genres = []
+
+
+      for title in self.titles:
+        genres = title[1].split('|')
+        for genre in genres:
+          self.genres.append(genre.lower())
+
+      self.genres = set(self.genres)
+
+
       # very positive, very negative words
       veryPositiveList = ['good', 'great', 'love', 'amazing', 'awesome', 'cool', 'favorite', 'best', 'dope', 'masterpiece', 'ultimate', 'fave', '5/5', 'beautiful', 'glorious', 'stunning', 'excellent', 'superior', 'outstanding']
       # lemmetize
@@ -67,6 +82,11 @@ class Chatbot:
       # thresholds
       self.loveThreshold = 3.0
       self.likeThreshold = 1.0
+
+
+
+
+
 
     #############################################################################
     # 1. WARM UP REPL
@@ -253,7 +273,7 @@ class Chatbot:
       newLine = []
       for word in lineArr:
         if(word == "I"):
-          newLine.append('I')
+          newLine.append('i')
         else:
           newLine.append(word)
       line = ' '.join(newLine)
@@ -287,6 +307,16 @@ class Chatbot:
         titles = []
         currentGroup = ""
         origLine = line
+
+        newLine = ""
+        punctuation = set(',.?!;()')
+
+        for char in line:
+          if char in punctuation:
+            continue
+          newLine = newLine + char
+        line = newLine 
+
         line = line.split(' ')
         previousCap = len(line)
         previousCapFlag = True
@@ -296,9 +326,13 @@ class Chatbot:
 
         if(line[-1] == ''):
           line = line[:-1]
+        if(line[-1] == " "):
+          line = line[:-1]
+
 
 
         while True:
+
 
           if line[i][0].isupper():
             if previousCapFlag:
@@ -447,6 +481,8 @@ class Chatbot:
                 result = index
               else:
                 return -2, None
+      if(result != ""):
+        return result, self.titles[result][0]
 
       result = ""
       matchLoc = -1
@@ -475,6 +511,26 @@ class Chatbot:
       else:
         return result, self.titles[result][0]
 
+
+    def randomMovie(self, input):
+      movieGenre = []
+      input = input.lower()
+      for i in xrange(0, len(self.titles)):
+        movie = self.titles[i]
+        genres = movie[1].lower()
+        if input in genres:
+          movieGenre.append((i, movie))
+
+      randMovie = movieGenre[random.randint(0, len(movieGenre))]
+
+      return randMovie[0], randMovie[1][0]
+
+
+
+      print('hello')
+
+
+
     def process(self, input):
       """Takes the input string from the REPL and call delegated functions
       that
@@ -494,6 +550,32 @@ class Chatbot:
       ignoreValidation = False
       if input == "Yes" or input == "No":
         ignoreValidation = True
+      if(input.lower() == "Random!".lower()):
+        self.randomMode = True
+        response = "Which genre are you feeling? ;). The genres I know about are:" 
+        for genre in self.genres:
+          response = response + "\n" + genre
+        return response
+
+      if(self.randomMode):
+        if(input.lower() in self.genres):
+          titleIndex, title = self.randomMovie(input)
+          self.randomMode = False
+          return "Try watching " + title + ". Let me know what you think after! Feel free to use \"Random!\" again, or you can start talking about movies you like or dislike."
+
+
+        else:
+          response = "Could you clarify with genre? The genres I know about are:"
+          for genre in self.genres:
+            response = response + "\n" + genre
+          return response
+      
+
+
+
+
+
+
 
       if(self.sentimentReprompt):
         ignoreValidation = True

@@ -340,16 +340,51 @@ class Chatbot:
           titleArr = titleArr[0:-1]
           titleNoYear = ' '.join(titleArr)
           titleNoYearArr.append((index, titleNoYear))
+        else:
+          titleNoYearArr.append((index, title))
         if(input == year):
+          return index, self.titles[index][0]
+        if(input == "(" + year + ")"):
           return index, self.titles[index][0]
       
       result = ""
       for index, title in titleNoYearArr:
+        matchBegin = title.find(input)
+        if(matchBegin >= 0):
+          tempTitleArr = title.split(' ')
+          for word in tempTitleArr:
+            if(word == input):
+              if(result == ""):
+                result = index
+              else:
+                return -2, None
+
+      result = ""
+      matchLoc = -1
+      matchTitle = ""
+
+      for index, title in titleNoYearArr:
+
         if(title.find(input) >= 0):
           if(result == ""):
             result = index
-          else: #Cannot identify (hits multiple)
-            return -2, None
+            matchLoc = title.find(input)
+            matchTitle = title
+          else:
+            if(matchLoc != title.find(input)):
+              return -2, None
+            else:
+              title1 = matchTitle[matchLoc + len(input):]
+              title2 = title[matchLoc + len(input):]
+              title1Arr = title1.split(' ')
+              title2Arr = title2.split(' ')
+              if(title1Arr[0] == title2Arr[0]):
+                return -2, None
+
+
+          # if(result == ""):
+          #   result = index
+
       if(result == ""): #Could not find
         return -3, None
       else:

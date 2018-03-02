@@ -42,6 +42,8 @@ class Chatbot:
 
       self.nonQuoteTitle = False
 
+      self.titleIndex = -1
+      self.sentimentReprompt = False
 
       # very positive, very negative words
       veryPositiveList = ['good', 'great', 'love', 'amazing', 'awesome', 'cool', 'favorite', 'best', 'dope', 'masterpiece', 'ultimate', 'fave', '5/5', 'beautiful', 'glorious', 'stunning', 'excellent', 'superior', 'outstanding']
@@ -126,8 +128,8 @@ class Chatbot:
 
     def evaluateSentiment(self, title, line, fromDisambiguatedLine):
 
-      print(line)
-      print(title)
+      # print(line)
+      # print(title)
 
       posScore = 0
       negScore = 0
@@ -141,22 +143,19 @@ class Chatbot:
         titleArr = title.split(' ')
         lineArr = line.split(' ')
 
-
-
-
         for i in xrange(0, len(titleArr)):
           titleArr[i] = titleArr[i].lower()
         for i in xrange(0, len(lineArr)):
           lineArr[i] = lineArr[i].lower()
 
-        print(titleArr)
-        print(lineArr)
+        # print(titleArr)
+        # print(lineArr)
 
         for word in lineArr:
           if(word not in titleArr):
             newLine.append(word)
 
-        print(newLine)
+        # print(newLine)
 
 
 
@@ -192,7 +191,7 @@ class Chatbot:
           negating = not negating
 
         if word in self.veryPositive:
-          print(word)
+          # print(word)
           if negating:
               negScore += mult * 1
           else:
@@ -232,7 +231,7 @@ class Chatbot:
 
       self.nonQuoteTitle = False
       if totalScore == 0:
-        return 'pos', 'Yeah, ' + title + ' could have really swung either way. Unlike the way I feel about you, which is definitely entirely in the positive.'
+        return '?', 'Yeah, ' + title + ' could have really swung either way. Unlike the way I feel about you, which is definitely entirely in the positive.'
       if totalScore >= self.loveThreshold:
         return 'pos', 'Wow, you seem to a huge fan of ' + title + '! I thought it was great too... we really think alike don\'t we?'
       elif totalScore >= self.likeThreshold:
@@ -246,7 +245,11 @@ class Chatbot:
 
     def grabAndValidateMovieTitle(self, line):
       lineArr = line.split(' ');
-      print(lineArr)
+
+
+
+
+      # print(lineArr)
       newLine = []
       for word in lineArr:
         if(word == "I"):
@@ -254,10 +257,25 @@ class Chatbot:
         else:
           newLine.append(word)
       line = ' '.join(newLine)
-      print(line)
+      # print(line)
 
       titleReg = re.compile('[\"](.*?)[\"]')
       results = re.findall(titleReg, line)
+
+      if len(results) == 1:
+        resultsArr = results[0].split(' ')
+        newResultsArr = []
+        if(resultsArr[0] == "An" or resultsArr[0] == "A" or resultsArr[0] == "The"):
+          for i in xrange(1, len(resultsArr) - 1):
+            newResultsArr.append(resultsArr[i])
+          newResultsArr[-1] = newResultsArr[-1] + ","
+          newResultsArr.append(resultsArr[0])
+          newResultsArr.append(resultsArr[-1])
+          results[0] = ' '.join(newResultsArr)
+
+
+
+
 
       # too many movies quoted
       if len(results) > 1:
@@ -324,8 +342,8 @@ class Chatbot:
           title = title.lower()
           for entryTitle, index in allTitlesLowerCase:
             if(title == entryTitle):
-              print(title)
-              print(self.titles[index][0])
+              # print(title)
+              # print(self.titles[index][0])
               count = 0
               for otherTitle, index2 in allTitlesLowerCase:
                 if(otherTitle == title):
@@ -352,6 +370,9 @@ class Chatbot:
       # one title is found in quotes
       resultList = []
       allTitlesLowerCase = []
+
+
+
       for i in xrange(0, len(self.titles)):
         results[0] = results[0].lower()
         if results[0] == self.titles[i][0].lower():
@@ -474,9 +495,14 @@ class Chatbot:
       if input == "Yes" or input == "No":
         ignoreValidation = True
 
+      if(self.sentimentReprompt):
+        ignoreValidation = True
+
+
       title = None
       titleIndex = -6
       useDisambiguateLine = False
+
 
       if self.disambiguate:
         titleIndex, title = self.disambiguateLine(input)
@@ -529,6 +555,8 @@ class Chatbot:
           response = "I GOT IT! You might enjoy "
 
       # IF VALID/NO ERRORS, EVALUATE SENTIMENT
+
+
       if title != None:
         if(useDisambiguateLine):
           sentiment, sampleResponse = self.evaluateSentiment(title, self.disambiguateOrigLine, True)
@@ -536,11 +564,40 @@ class Chatbot:
 
         else:
           sentiment, sampleResponse = self.evaluateSentiment(title, input, False)
+        
+        if sentiment == "?":
+          #Reprompt, but retain Title Index
+          #Can you tell me how you felt in more detail?
+
+          response = sampleResponse + " Hmmm... I'm not entirely sure how you felt. Mind sharing more details?"
+          self.sentimentReprompt = True
+          self.titleIndex = titleIndex
+          return response
       else:
-        if input.lower() != "Yes".lower() and input.lower() != "No".lower():
-          if(input.lower() == "Random!".lower()):
-            print("Returning a random movie")
+        if input.lower() != "Yes".lower() and input.lower() != "No".lower() and not self.sentimentReprompt:
+          # if(input.lower() == "Random!".lower()):
+            # print("Returning a random movie")
           return "Hmm, it's been an off day for me. Can you clarify what you meant?"    
+
+      if(title == None and self.sentimentReprompt == True):
+        sentiment, sampleResponse = self.evaluateSentiment(self.titles[self.titleIndex][0], input, True)
+        if sentiment == "?":
+          #Reprompt, but retain Title Index
+          #Can you tell me how you felt in more detail?
+
+          response = sampleResponse + " But hmmm... I'm not entirely sure how you felt. Mind sharing more details?"
+          self.sentimentReprompt = True
+          self.titleIndex = titleIndex
+
+          return response
+
+        else:
+          title = self.titles[self.titleIndex][0]
+          titleIndex = self.titleIndex
+          self.sentimentReprompt = False
+          self.titleIndex = -1
+
+
 
       # MAP THE TITLE TO SENTIMENT
       if title != None: #Only update matrix if they input a movie

@@ -21,7 +21,7 @@ class Chatbot:
     # `moviebot` is the default chatbot. Change it to your chatbot's name       #
     #############################################################################
     def __init__(self, is_turbo=False):
-      self.name = 'moviebot'
+      self.name = 'flirtbot'
       self.is_turbo = is_turbo
       self.alphanum = re.compile('[^a-zA-Z0-9]')
       self.p = PorterStemmer()
@@ -57,7 +57,6 @@ class Chatbot:
       for word in intensifierList:
         self.intensifiers.add(self.p.stem(word))
 
-
       # thresholds
       self.loveThreshold = 3.0
       self.likeThreshold = 1.0
@@ -69,13 +68,11 @@ class Chatbot:
     def greeting(self):
       """chatbot greeting message"""
       #############################################################################
-      # TODO: Write a short greeting message                                      #
       #############################################################################
 
-      greeting_message = 'How can I help you?'
+      greeting_message = 'Hey there, you can call me sir or miss Flirt. So, do you already have someone to Netflix and Chill with? Let\'s start by talking about some movies you already like...'
 
       #############################################################################
-      #                             END OF YOUR CODE                              #
       #############################################################################
 
       return greeting_message
@@ -83,13 +80,11 @@ class Chatbot:
     def goodbye(self):
       """chatbot goodbye message"""
       #############################################################################
-      # TODO: Write a short farewell message                                      #
       #############################################################################
 
-      goodbye_message = 'Have a nice day!'
+      goodbye_message = 'Give me those digits before you go though! I swear you\'re the first human with whom I\'ve had such lovely conversation.'
 
       #############################################################################
-      #                             END OF YOUR CODE                              #
       #############################################################################
 
       return goodbye_message
@@ -186,31 +181,23 @@ class Chatbot:
       
 
       totalScore = posScore - negScore
+      if '!' in line: 
+        totalScore *= 2
+      if '!!' in line:
+        totalScore *= 3
+
       if totalScore == 0:
-        return 'pos', 'Yeah, ' + title + ' could have really swung either way.'
+        return 'pos', 'Yeah, ' + title + ' could have really swung either way. Unlike the way I feel about you, which is definitely entirely in the positive.'
       if totalScore >= self.loveThreshold:
-        return 'pos', 'Wow, you seem to a huge fan of ' + title + '! I thought it was great too.'
+        return 'pos', 'Wow, you seem to a huge fan of ' + title + '! I thought it was great too... we really think alike don\'t we?'
       elif totalScore >= self.likeThreshold:
-        return 'pos', 'Yeah, ' + title + ' was a pretty solid film. My friends and I had a great time with it.'
+        return 'pos', 'Yeah, ' + title + ' was a pretty solid film. My friends and I had a great time with it. I feel like if we watched it together I would feel better about it...'
       elif totalScore >= -1 * self.likeThreshold:
-        return 'neg', 'Oh right, I wasn\'t the biggest fan of ' + title + ' either. Glad we think alike!'
+        return 'neg', 'Oh right, I wasn\'t the biggest fan of ' + title + ' either. What in the world was that director thinking, right?! Jeez, you\'re always so on point with your ideas.'
       elif totalScore >= -1 * self.loveThreshold:
-        return 'neg', 'You\'re darn right about that. ' + title + ' was a complete and utter trainwreck!'
+        return 'neg', 'You\'re darn right about that. ' + title + ' was a complete and utter trainwreck! Just like how I would be without you.'
       else:
-        return '?', 'So, how exactly did you feel about ' + title + '?'
-
-
-      # if negScore == 0:
-      #   posNegRatio = posScore
-      # else:
-      #   posNegRatio = float(posScore) / float(negScore)
-      
-      # print posNegRatio
-
-      # if posNegRatio >= lam:
-      #   return 'pos'
-      # else:
-      #   return 'neg'
+        return '?', 'So, how exactly do you feel about me--- I mean, ' + title + '?'
 
     def grabAndValidateMovieTitle(self, line):
       lineArr = line.split(' ');
@@ -318,7 +305,7 @@ class Chatbot:
       
       # nothing found
       else:
-        # CREATIVE MODE: spell checking
+        # CREATIVE MODE: spell checking – only in quotes
         spellcheckIndex, spellcheckResult = self.spellcheck(results[0])
         if spellcheckIndex != -1:
           return spellcheckIndex, spellcheckResult
@@ -328,7 +315,6 @@ class Chatbot:
       processInput = []
       for word in input.split(' '):
         processInput.append(self.p.stem(word))
-
 
       return ' '.join(processInput)
 
@@ -421,14 +407,14 @@ class Chatbot:
       if self.disambiguate:
         titleIndex, title = self.disambiguateLine(input)
         if(titleIndex == -1):
-          return "Okay, tell me more about the movies you've watched!"
+          return "Okay, no worries at all. That list was getting a bit awkward anyways. Let's go ahead and keep talking about other films you've watched, then."
         elif(titleIndex == -2):
-          response =  "Hmm... that's not clear enough. Do you mind specifying which movie? Here is the list again:"
+          response =  "Ah jeez, I swear I'm not usually like this... But I didn't quite get what you meant. Do you mind specifying which movie? Here is the list again:"
           for index, result in self.disambiguateList:
             response = response + "\n " + result
           return response
         elif(titleIndex == -3):
-          response = "I couldn't seem to find anything with that info. Mind trying again? Here is the list again"
+          response = "Did I write something wrong? I couldn't seem to find anything with that info. If it's not too much of a burden for you, mind trying again? Oh jeez, I'm really messing this up aren't I? Here is the list again:"
           for index, result in self.disambiguateList:
             response = response + "\n " + result
           return response
@@ -441,36 +427,36 @@ class Chatbot:
         titleIndex, title = self.grabAndValidateMovieTitle(input)
       # TODO - HANDLE ERRORS FOR TITLE RETRIEVAL
       if titleIndex == -1:
-        return "Looks like you may have multiple titles there! Please respond with just one movie at a time."
+        return "Looks like you may have multiple titles there! Please respond with just one movie at a time. I want to deep dive into everything you have to say slowly, so I can learn as much about you as I can!"
       if titleIndex == -2:
         if len(self.currentUserRatings) < self.minimumDataPoints:
-          return "Please tell me a bit more about movies you've seen. Remember to surround movie titles with quotation marks!"
+          return "You're a darling, and I'd love to help you figure out which movie we can watch together-I mean, you can watch... Please tell me a bit more about movies you've seen. Remember to surround movie titles with quotation marks!"
       if titleIndex == -3:
-        return "I could not seem to find that movie. Please double check that you entered a valid movie or try another!"
+        return "I swear I'm not usually like this haha, it must be the nerves! But I don't think I\'ve heard of that movie before. Are you sure you didn't mix up the name maybe?"
 
       if titleIndex == -4:
         # Set flag to disambigate
-        response = "Hmm...I don't know what you mean exactly. I found these matches: "
+        response = "I know exactly what you mean!! Well, not really... A few titles come to mind when you mention that movie. Which one are you talking about?"
         for result in title:
           response = response + "\n " + result[1]
-        response = response + "\nWhich did you mean? Type in their year, name, or roman/arabic numeral (Or say Nevermind to move on!)"
+        response = response + "\nJust type in the year for me and I'll be able to help you out, dear! Or, we don't have to go down this rabbithole - just type 'Nevermind' and we can move onto the next topic."
         self.disambiguate = True
         self.disambiguateList = title
         return response
 
       if len(self.currentUserRatings) >= self.minimumDataPoints:
         if input == "No":
-          response = "Okay. Tell me a bit more about movies you've watched so I can make better recommendations."
+          response = "Of course, whatever you say. Tell me a bit more about movies you've watched so I can make better recommendations."
           return response
         if input == "Yes":
-          response = "You might enjoy "
+          response = "I GOT IT! You might enjoy "
 
       # IF VALID/NO ERRORS, EVALUATE SENTIMENT
       if title != None:
         sentiment, sampleResponse = self.evaluateSentiment(title, input)
       else:
         if input != "Yes" and input != "No":
-          return "Do not understand"    
+          return "Hmm, it's been an off day for me. Can you clarify what you meant?"    
 
       # MAP THE TITLE TO SENTIMENT
       if title != None: #Only update matrix if they input a movie
@@ -478,6 +464,7 @@ class Chatbot:
         self.recommendCount = 0
       if len(self.currentUserRatings) < self.minimumDataPoints and title != None:
         response = sampleResponse
+        response += ' I feel like we\'re really connecting here! Keep telling me about some movies you like or dislike.'
         # if sentiment == 'pos':
         #   response = "Glad to hear you had good things to say about " + title + "! Tell me a bit more about other movies you've watched!"
         # else:
@@ -485,10 +472,7 @@ class Chatbot:
       if(len(self.currentUserRatings) == self.minimumDataPoints and not self.recommendationPrompt):
         response += "Thanks for sharing your movie preferences. I can now make a recommendation! You should consider watching " 
       elif(len(self.currentUserRatings) > self.minimumDataPoints and title != None):
-        if(sentiment == 'pos'):
-          response = "I'll note you felt good about " + title + "."
-        else:
-          response = "Oh, that's disappointing. I'll remember how you felt about " + title + "."
+        response = sampleResponse
         return response + " Would you like a movie recommendation? (Yes/No)"
 
       if len(self.currentUserRatings) >= self.minimumDataPoints:
@@ -594,7 +578,6 @@ class Chatbot:
 
       estimatedRatings = []
       ## constructs a matrix of all predicted user ratings
-      print self.currentUserRatings
 
       for movieIndex, movieRow in enumerate(self.ratings):
         userRating = 0

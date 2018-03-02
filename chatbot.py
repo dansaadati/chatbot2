@@ -353,7 +353,7 @@ class Chatbot:
       if(result == ""): #Could not find
         return -3, None
       else:
-        return result, self.titles[result]
+        return result, self.titles[result][0]
 
 
 

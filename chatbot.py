@@ -324,6 +324,40 @@ class Chatbot:
       return ' '.join(processInput)
 
     def disambiguateLine(self, input):
+      if(input == "Nevermind"):
+        self.disambiguateList = []
+        self.disambiguate = False
+        return -1, None
+      titleNoYearArr = []
+      for index, title in self.disambiguateList:
+        if(input == title):
+          return index, self.titles[index][0]
+        titleArr = title.split(' ')
+        titleNoYear = ""
+        year = ""
+        if(titleArr[-1][0] == "(" and titleArr[-1][5] == ")"):
+          year = titleArr[-1][1:5]
+          titleArr = titleArr[0:-1]
+          titleNoYear = ' '.join(titleArr)
+          titleNoYearArr.append((index, titleNoYear))
+        if(input == year):
+          return index, self.titles[index][0]
+      
+      result = ""
+      for index, title in titleNoYearArr:
+        if(title.find(input) >= 0):
+          if(result == ""):
+            result = index
+          else: #Cannot identify (hits multiple)
+            return -2, None
+      if(result == ""): #Could not find
+        return -3, None
+      else:
+        return result, self.titles[result]
+
+
+
+
 
     def process(self, input):
       """Takes the input string from the REPL and call delegated functions
@@ -341,13 +375,31 @@ class Chatbot:
       else:
         response = 'processed %s in starter mode' % input
 
+
+      ignoreValidation = False
+        
       if(self.disambiguate):
-        self.disambiguateLine(input)
-        return ""
+        titleIndex, title = self.disambiguateLine(input)
+        if(titleIndex == -1):
+          return "Okay, tell me more about the movies you've watched!"
+        elif(titleIndex == -2):
+          response =  "Hmm... that's not clear enough. Do you mind specifying which movie? Here is the list again:"
+          for result in title:
+            response = response + "\n " + result[1]
+          return response
+        elif(titleIndex == -3):
+          response = "I couldn't seem to find anything with that info. Mind trying again? Here is the list again"
+          for result in title:
+            response = response + "\n " + result[1]
+          return response
+        else:
+          ignoreValidation = True
+          self.disambiguate = False
+          self.disambiguateList = []
 
 
-
-      titleIndex, title = self.grabAndValidateMovieTitle(input)
+      if(not ignoreValidation):
+        titleIndex, title = self.grabAndValidateMovieTitle(input)
       # TODO - HANDLE ERRORS FOR TITLE RETRIEVAL
       if(titleIndex == -1):
         return "Looks like you may have multiple titles there! Please respond with just one movie at a time."
@@ -362,7 +414,7 @@ class Chatbot:
         response = "Hmm...I don't know what you mean exactly. I found these matches: "
         for result in title:
           response = response + "\n " + result[1]
-        response = response + "\nWhich did you mean?"
+        response = response + "\nWhich did you mean? (Or say Nevermind to move on!)"
         self.disambiguate = True
         self.disambiguateList = title
 

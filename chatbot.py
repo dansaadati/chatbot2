@@ -186,6 +186,7 @@ class Chatbot:
       if '!!' in line:
         totalScore *= 3
 
+      print totalScore
       if totalScore == 0:
         return 'pos', 'Yeah, ' + title + ' could have really swung either way. Unlike the way I feel about you, which is definitely entirely in the positive.'
       if totalScore >= self.loveThreshold:
@@ -319,7 +320,7 @@ class Chatbot:
       return ' '.join(processInput)
 
     def disambiguateLine(self, input):
-      if input == "Nevermind":
+      if input.tolower() == "Nevermind".tolower():
         self.disambiguateList = []
         self.disambiguate = False
         return -1, None
@@ -455,7 +456,7 @@ class Chatbot:
       if title != None:
         sentiment, sampleResponse = self.evaluateSentiment(title, input)
       else:
-        if input != "Yes" and input != "No":
+        if input.tolower() != "Yes".tolower() and input.tolower() != "No".tolower():
           return "Hmm, it's been an off day for me. Can you clarify what you meant?"    
 
       # MAP THE TITLE TO SENTIMENT
@@ -464,13 +465,14 @@ class Chatbot:
         self.recommendCount = 0
       if len(self.currentUserRatings) < self.minimumDataPoints and title != None:
         response = sampleResponse
-        response += ' I feel like we\'re really connecting here! Keep telling me about some movies you like or dislike.'
+        response += ' Anyways, we\'re really connecting here! Keep telling me about some movies you like or dislike.'
         # if sentiment == 'pos':
         #   response = "Glad to hear you had good things to say about " + title + "! Tell me a bit more about other movies you've watched!"
         # else:
         #   response = "Oh, I'll keep note that you weren't really feeling " + title + ". Please tell me a bit more about another movie you've watched."
       if(len(self.currentUserRatings) == self.minimumDataPoints and not self.recommendationPrompt):
-        response += "Thanks for sharing your movie preferences. I can now make a recommendation! You should consider watching " 
+        response = sampleResponse
+        response += " Thanks for sharing your movie preferences. I can now make a recommendation! You should consider watching " 
       elif(len(self.currentUserRatings) > self.minimumDataPoints and title != None):
         response = sampleResponse
         return response + " Would you like a movie recommendation? (Yes/No)"

@@ -276,7 +276,12 @@ class Chatbot:
         if len(line) == 0:
           return -2, None
 
+        if(line[-1] == ''):
+          line = line[:-1]
+
+
         while True:
+
           if line[i][0].isupper():
             if previousCapFlag:
               previousCap = i
@@ -319,15 +324,15 @@ class Chatbot:
           title = title.lower()
           for entryTitle, index in allTitlesLowerCase:
             if(title == entryTitle):
-
+              print(title)
+              print(self.titles[index][0])
               count = 0
               for otherTitle, index2 in allTitlesLowerCase:
                 if(otherTitle == title):
                   count = count + 1
               if(count == 1):
                 return index, self.titles[index][0]
-              else:
-                resultList.append((index, self.titles[index][0]))
+
 
             if entryTitle.find(title) == 0:
               if entryTitle.split(' ')[0] == title.split(' ')[0]:

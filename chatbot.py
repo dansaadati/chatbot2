@@ -366,7 +366,7 @@ class Chatbot:
 
       # ambiguous, could be more than one
       elif len(resultList) > 1:
-        self.disambiguateOrigLine = origLine
+        self.disambiguateOrigLine = line
         return -4, resultList
       
       # nothing found

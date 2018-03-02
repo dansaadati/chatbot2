@@ -38,7 +38,24 @@ class Chatbot:
       self.disambiguate = False
       self.disambiguateList = []
 
+      # very positive, very negative words
+      veryPositiveList = ['good', 'great', 'love', 'amazing', 'awesome', 'cool', 'favorite', 'best', 'dope', 'masterpiece', 'ultimate', 'fave', '5/5', 'beautiful', 'glorious', 'stunning', 'excellent', 'superior', 'outstanding']
+      # lemmetize
+      self.veryPositive = set()
+      for word in veryPositiveList:
+        self.veryPositive.add(self.p.stem(word))
 
+      veryNegativeList = ['agonizing', 'worst', 'horrible', 'awful', 'bad',  'broken',  'appalling', 'atrocious', 'depressing', 'terrible', 'disgusting', 'dreadful', 'nasty', '0', 'unpleasant', 'deplorable', 'gross', 'offensive', 'abhorrent', 'loathsome', 'abhor', 'despise', 'detest', 'loathe']
+      # lemmetize
+      self.veryNegative = set()
+      for word in veryNegativeList:
+        self.veryNegative.add(self.p.stem(word))
+
+      # intensifier word list
+      intensifierList = ['absolute', 'really', 'very', 'extremely', 'amazingly', 'bloody', 'dreadfully', 'colossally', 'especially', 'exceptionally', 'fucking', 'hella', 'incredibly', 'literally', 'insanely', 'remarkably', 'supremely', 'terrifically']
+      self.intensifiers = set()
+      for word in intensifierList:
+        self.intensifiers.add(self.p.stem(word))
 
     #############################################################################
     # 1. WARM UP REPL
@@ -102,15 +119,22 @@ class Chatbot:
         of.close()
         pass
 
-    def evaluateSentiment(self, line):
+    def evaluateSentiment(self, title, line):
       posScore = 0
       negScore = 0
       lam = 1.0
+      mult = 1
+      
 
-      # Remove the title from the sentence
       removed = re.sub(r'[\"](.*?)[\"]', '', line)
+      if self.is_turbo == True:
+        # remove year argument from end
+        title = title.rsplit(' ', 1)[0]
+        removed = re.sub(title, '', line)
+        print removed
+
       negation = ['no', 'not', 'none', 'never', 'hardly', 'scarcely',
-        'n\'t', 'didn\'t',
+        'n\'t', 'didn\'t', 'ain\'t',
        'barely', 'doesn\'t', 'isn\'t', 'wasn\'t', 'shouldn\'t',
         'couldn\'t', 'won\'t', 'can\'t', 'don\'t']
       punctuation = set(',.?!;()')
@@ -118,33 +142,52 @@ class Chatbot:
       # Lemmetize the sentence
       line = self.lemonizeLine(removed)
 
+      print line
+
       # Set negation state and calculate score
       negating = False
       for word in line.split(' '):
         if word in negation:
           negating = not negating
 
+        if word in self.veryPositive:
+          if negating:
+              negScore += mult * 1
+          else:
+            posScore += mult * 1
+
+        if word in self.veryNegative:
+          if negating:
+              posScore += mult * 1
+          else:
+            negScore += mult * 1
+
+        if word in self.intensifiers:
+          mult += 1
+
         if word in self.sentiment:
           if(self.sentiment[word] == 'pos'):
             if negating:
-              negScore = negScore + 1
+              negScore += mult * 1
             else:
-              posScore = posScore + 1
+              posScore += mult * 1
           if(self.sentiment[word] == 'neg'):
             if negating:
-              posScore = posScore + 1
+              posScore += mult * 1
             else:
-              negScore = negScore + 1
+              negScore += mult * 1
 
         # if we see punctuation in the word, reset negation flag
         if set(word) & punctuation:
           negating = False
       
       if negScore == 0:
-        posNegRatio = lam
+        posNegRatio = posScore
       else:
         posNegRatio = float(posScore) / float(negScore)
       
+      print posNegRatio
+
       if posNegRatio >= lam:
         return 'pos'
       else:
@@ -328,7 +371,7 @@ class Chatbot:
               if title1Arr[0] == title2Arr[0]:
                 return -2, None
 
-      if(result == ""): #Could not find
+      if(result == ""): # Could not find
         return -3, None
       else:
         return result, self.titles[result][0]
@@ -350,7 +393,7 @@ class Chatbot:
         response = 'processed %s in starter mode' % input
 
       ignoreValidation = False
-      if(input == "Yes" or input == "No"):
+      if input == "Yes" or input == "No":
         ignoreValidation = True
 
       title = None
@@ -391,7 +434,7 @@ class Chatbot:
         response = "Hmm...I don't know what you mean exactly. I found these matches: "
         for result in title:
           response = response + "\n " + result[1]
-        response = response + "\nWhich did you mean? (Or say Nevermind to move on!)"
+        response = response + "\nWhich did you mean? Type in their year, name, or roman/arabic numeral (Or say Nevermind to move on!)"
         self.disambiguate = True
         self.disambiguateList = title
         return response
@@ -402,20 +445,13 @@ class Chatbot:
           return response
         if input == "Yes":
           response = "You might enjoy "
-      # ---> User inputs invalid title
-      # ---> User inputs no title
-      # ---> User inputs too many titles
 
       # IF VALID/NO ERRORS, EVALUATE SENTIMENT
       if title != None:
-        sentiment = self.evaluateSentiment(input)
+        sentiment = self.evaluateSentiment(title, input)
       else:
         if input != "Yes" and input != "No":
           return "Do not understand"    
-
-      # ---> User feels positively
-      # ---> User feels negatively
-      # ---> TODO FOR CREATIVE: Maybe have a spectrum of emotion. 
 
       # MAP THE TITLE TO SENTIMENT
       if title != None: #Only update matrix if they input a movie

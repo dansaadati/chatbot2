@@ -37,6 +37,8 @@ class Chatbot:
 
       self.disambiguate = False
       self.disambiguateList = []
+      self.disambiguateOrigLine = ""
+
 
       # very positive, very negative words
       veryPositiveList = ['good', 'great', 'love', 'amazing', 'awesome', 'cool', 'favorite', 'best', 'dope', 'masterpiece', 'ultimate', 'fave', '5/5', 'beautiful', 'glorious', 'stunning', 'excellent', 'superior', 'outstanding']
@@ -224,6 +226,7 @@ class Chatbot:
         # Creative mode: find title without quotes
         titles = []
         currentGroup = ""
+        origLine = line
         line = line.split(' ')
         previousCap = len(line)
         previousCapFlag = True
@@ -281,6 +284,7 @@ class Chatbot:
         if len(resultList) == 1:
           return resultList[0][0], self.titles[resultList[0][0]][0]
         elif len(resultList) > 1:
+          self.disambiguateOrigLine = origLine
           return -4, resultList
         return -2, None
       
@@ -302,6 +306,7 @@ class Chatbot:
 
       # ambiguous, could be more than one
       elif len(resultList) > 1:
+        self.disambiguateOrigLine = origLine
         return -4, resultList
       
       # nothing found
@@ -320,9 +325,10 @@ class Chatbot:
       return ' '.join(processInput)
 
     def disambiguateLine(self, input):
-      if input.tolower() == "Nevermind".tolower():
+      if input.lower() == "Nevermind".lower():
         self.disambiguateList = []
         self.disambiguate = False
+        self.disambiguateOrigLine = ""
         return -1, None
       titleNoYearArr = []
       for index, title in self.disambiguateList:
@@ -404,6 +410,7 @@ class Chatbot:
 
       title = None
       titleIndex = -6
+      useDisambiguateLine = False
 
       if self.disambiguate:
         titleIndex, title = self.disambiguateLine(input)
@@ -423,9 +430,10 @@ class Chatbot:
           ignoreValidation = True
           self.disambiguate = False
           self.disambiguateList = []
+          useDisambiguateLine = True
 
       if not ignoreValidation:
-        titleIndex, title = self.grabAndValidateMovieTitle(input)
+          titleIndex, title = self.grabAndValidateMovieTitle(input)
       # TODO - HANDLE ERRORS FOR TITLE RETRIEVAL
       if titleIndex == -1:
         return "Looks like you may have multiple titles there! Please respond with just one movie at a time. I want to deep dive into everything you have to say slowly, so I can learn as much about you as I can!"
@@ -443,6 +451,7 @@ class Chatbot:
         response = response + "\nJust type in the year for me and I'll be able to help you out, dear! Or, we don't have to go down this rabbithole - just type 'Nevermind' and we can move onto the next topic."
         self.disambiguate = True
         self.disambiguateList = title
+        self.disambiguateOrigLine = input
         return response
 
       if len(self.currentUserRatings) >= self.minimumDataPoints:
@@ -454,7 +463,12 @@ class Chatbot:
 
       # IF VALID/NO ERRORS, EVALUATE SENTIMENT
       if title != None:
-        sentiment, sampleResponse = self.evaluateSentiment(title, input)
+        if(useDisambiguateLine):
+          sentiment, sampleResponse = self.evaluateSentiment(title, self.disambiguateOrigLine)
+          self.disambiguateOrigLine = ""
+          
+        else:
+          sentiment, sampleResponse = self.evaluateSentiment(title, input)
       else:
         if input.tolower() != "Yes".tolower() and input.tolower() != "No".tolower():
           return "Hmm, it's been an off day for me. Can you clarify what you meant?"    

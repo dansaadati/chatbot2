@@ -38,6 +38,9 @@ class Chatbot:
       self.disambiguate = False
       self.disambiguateList = []
       self.disambiguateOrigLine = ""
+      self.disambiguateTitle = ""
+
+      self.nonQuoteTitle = False
 
 
       # very positive, very negative words
@@ -121,19 +124,56 @@ class Chatbot:
         of.close()
         pass
 
-    def evaluateSentiment(self, title, line):
+    def evaluateSentiment(self, title, line, fromDisambiguatedLine):
+
+      print(line)
+      print(title)
+
       posScore = 0
       negScore = 0
       # lam = 1.0
       mult = 1
-      
+
       removed = re.sub(r'[\"](.*?)[\"]', '', line)
+      newLine = []
+      if(self.nonQuoteTitle):
+
+        titleArr = title.split(' ')
+        lineArr = line.split(' ')
+
+
+
+
+        for i in xrange(0, len(titleArr)):
+          titleArr[i] = titleArr[i].lower()
+        for i in xrange(0, len(lineArr)):
+          lineArr[i] = lineArr[i].lower()
+
+        print(titleArr)
+        print(lineArr)
+
+        for word in lineArr:
+          if(word not in titleArr):
+            newLine.append(word)
+
+        print(newLine)
+
+
+
+      line = []
+      line = ' '.join(newLine)
+
+
+
+
       if self.is_turbo == True:
         # remove year argument from end, if year is recorded
         lastWord = title.rsplit(' ', 1)[0]
+
         if len(lastWord) == 6 and lastWord[1:-1].isdigit():
           title = title.rsplit(' ', 1)[0]
           removed = re.sub(title, '', line)
+
 
       negation = ['no', 'not', 'none', 'never', 'hardly', 'scarcely',
         'n\'t', 'didn\'t', 'ain\'t',
@@ -147,10 +187,12 @@ class Chatbot:
       # Set negation state and calculate score
       negating = False
       for word in line.split(' '):
+
         if word in negation:
           negating = not negating
 
         if word in self.veryPositive:
+          print(word)
           if negating:
               negScore += mult * 1
           else:
@@ -188,7 +230,7 @@ class Chatbot:
       if '!!' in line:
         totalScore *= 3
 
-      print totalScore
+      self.nonQuoteTitle = False
       if totalScore == 0:
         return 'pos', 'Yeah, ' + title + ' could have really swung either way. Unlike the way I feel about you, which is definitely entirely in the positive.'
       if totalScore >= self.loveThreshold:
@@ -282,9 +324,11 @@ class Chatbot:
           if len(resultList) > 0:
             break
         if len(resultList) == 1:
+          self.nonQuoteTitle = True
           return resultList[0][0], self.titles[resultList[0][0]][0]
         elif len(resultList) > 1:
           self.disambiguateOrigLine = origLine
+          self.nonQuoteTitle = True
           return -4, resultList
         return -2, None
       
@@ -329,6 +373,7 @@ class Chatbot:
         self.disambiguateList = []
         self.disambiguate = False
         self.disambiguateOrigLine = ""
+        self.nonQuoteTitle = False
         return -1, None
       titleNoYearArr = []
       for index, title in self.disambiguateList:
@@ -464,13 +509,13 @@ class Chatbot:
       # IF VALID/NO ERRORS, EVALUATE SENTIMENT
       if title != None:
         if(useDisambiguateLine):
-          sentiment, sampleResponse = self.evaluateSentiment(title, self.disambiguateOrigLine)
+          sentiment, sampleResponse = self.evaluateSentiment(title, self.disambiguateOrigLine, True)
           self.disambiguateOrigLine = ""
-          
+
         else:
-          sentiment, sampleResponse = self.evaluateSentiment(title, input)
+          sentiment, sampleResponse = self.evaluateSentiment(title, input, False)
       else:
-        if input.tolower() != "Yes".tolower() and input.tolower() != "No".tolower():
+        if input.lower() != "Yes".lower() and input.lower() != "No".lower():
           return "Hmm, it's been an off day for me. Can you clarify what you meant?"    
 
       # MAP THE TITLE TO SENTIMENT

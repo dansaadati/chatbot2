@@ -89,17 +89,15 @@ class Chatbot:
         for line in f:
             # make sure everything is lower case
             line = line.lower()
-
             pair = line.split(',')
 
             # stem words
-            line = self.p.stem(pair[0]) + ',' + pair[1][:-2]
+            line = self.p.stem(pair[0]) + ',' + pair[1]
 
-            # add to the document's conents
+            # add to the document's contents
             contents.extend(line)
             if len(line) > 0:
                 of.write("".join(line))
-                of.write('\n')
         f.close()
         of.close()
         pass
@@ -142,18 +140,17 @@ class Chatbot:
         if set(word) & punctuation:
           negating = False
       
-      if(negScore == 0):
+      if negScore == 0:
         posNegRatio = lam
       else:
         posNegRatio = float(posScore) / float(negScore)
       
-      if(posNegRatio >= lam):
+      if posNegRatio >= lam:
         return 'pos'
       else:
         return 'neg'
 
     def grabAndValidateMovieTitle(self, line):
- 
       lineArr = line.split(' ');
       print(lineArr)
       newLine = []
@@ -168,78 +165,49 @@ class Chatbot:
       titleReg = re.compile('[\"](.*?)[\"]')
       results = re.findall(titleReg, line)
 
-      if(len(results) > 1):
-        return -1, None #TODO : HANDLE ERROR
-      if(len(results) == 0):
-
-        #CREATIVE MODE: Attempt to find title
-
-
-        #Test what
-
-        """
-
-        i = 0
-
-        previousCap = 0
-        previousCapFlag = False
-        currentGroup = Test
-        i = 1
-        currentGroup = Test what
-        if(1 == 1)
-        i = 0
-
-        """
-
-
-
+      if len(results) > 1:
+        return -1, None
+      if len(results) == 0:
+        # Creative mode: find title without quotes
         titles = []
         currentGroup = ""
         line = line.split(' ')
         previousCap = len(line)
         previousCapFlag = True
         i = 0
-        if(len(line) == 0):
+        if len(line) == 0:
           return -2, None
 
-        while(True):
-
-          if(line[i][0].isupper()):
-            if(previousCapFlag):
+        while True:
+          if line[i][0].isupper():
+            if previousCapFlag:
               previousCap = i
               previousCapFlag = False
 
-          if(currentGroup == "" and line[i][0].isupper()):
+          if currentGroup == "" and line[i][0].isupper():
               currentGroup = line[i]
-          elif(currentGroup != ""):
+          elif currentGroup != "":
             currentGroup = currentGroup + " " + line[i]
 
-          if(currentGroup != ""):
+          if currentGroup != "":
             titles.append(currentGroup)
 
-          if(i == len(line) - 1):
- 
-            if(i == previousCap):
+          if i == len(line) - 1:
+            if i == previousCap:
               break
             i = previousCap
-            if(previousCap == len(line)):
+            if previousCap == len(line):
               break
             previousCapFlag = True
             currentGroup = ""
             previousCap = len(line)
-          i = i + 1
-          if(i == len(line)):
+          i += 1
+          if i == len(line):
             break
-
-
-
-
         titles.sort(key=len, reverse=True)
-        
         allTitlesLowerCase = []
         for i in xrange(0, len(self.titles)):
           title = self.titles[i][0].split(' ')
-
           if(len(title[-1]) >= 6):
             if(title[-1][0] == '(' and title[-1][5] == ')'):
               title = title[:-1]
@@ -258,72 +226,26 @@ class Chatbot:
           if(len(resultList) > 0):
             break
         if(len(resultList) == 1):
-
           return resultList[0][0], self.titles[resultList[0][0]][0]
         elif(len(resultList) > 1):
-
           return -4, resultList
-
-            #if(entryTitle == title):
-            #  return index, self.titles[index][0]
-
-  
-
-
-
-
-        
-
-
-
-
-        # for i in xrange(0, len(line)):
-        #   print(i)
-        #   if(line[i][0].isupper()):
-        #     if(previousCap > i):
-        #       previousCap = i
-        #     if(currentGroup == ""):
-        #       currentGroup = line[i]
-        #     else:
-        #       currentGroup = currentGroup + " " + line[i]
-        #     titles.append(currentGroup)
-        #   if(i == len(line) - 1):
-        #     print('in here')
-        #     i = previousCap
-        #     print(i)
-        #     previousCap = len(line)
-        #     currentGroup = ""
-        # print(titles)
-
-
         return -2, None
+      
+
       resultList = []
       allTitlesLowerCase = []
       for i in xrange(0, len(self.titles)):
-
-
         results[0] = results[0].lower()
         if(results[0] == self.titles[i][0].lower()):
-
           return i, self.titles[i][0]
         if(self.titles[i][0].lower().find(results[0]) == 0):
           if(results[0].split(' ')[0] == self.titles[i][0].lower().split(' ')[0]):
             resultList.append((i, self.titles[i][0]))
 
       if(len(resultList) == 1):
-
         return resultList[0][0], self.titles[resultList[0][0]][0]
       elif(len(resultList) > 1):
-
         return -4, resultList
-
-
-      # for index, pair in enumerate(self.titles):
-      #   print(pair)
-      #   print(index) 
-
-      #   if results[0] in pair[0]:
-      #     return index, results[0]
       else:
         return -3, None # TODO : Handle ERROR
 
@@ -393,18 +315,10 @@ class Chatbot:
               if(title1Arr[0] == title2Arr[0]):
                 return -2, None
 
-
-          # if(result == ""):
-          #   result = index
-
       if(result == ""): #Could not find
         return -3, None
       else:
         return result, self.titles[result][0]
-
-
-
-
 
     def process(self, input):
       """Takes the input string from the REPL and call delegated functions
@@ -431,7 +345,7 @@ class Chatbot:
       titleIndex = -6
 
         
-      if(self.disambiguate):
+      if self.disambiguate:
         titleIndex, title = self.disambiguateLine(input)
         if(titleIndex == -1):
           return "Okay, tell me more about the movies you've watched!"
@@ -451,7 +365,7 @@ class Chatbot:
           self.disambiguateList = []
 
 
-      if(not ignoreValidation):
+      if not ignoreValidation:
         titleIndex, title = self.grabAndValidateMovieTitle(input)
       # TODO - HANDLE ERRORS FOR TITLE RETRIEVAL
       if(titleIndex == -1):
@@ -463,14 +377,13 @@ class Chatbot:
         return "I could not seem to find that movie. Please double check that you entered a valid movie or try another!"
 
       if(titleIndex == -4):
-        #Set flag to disambigate
+        # Set flag to disambigate
         response = "Hmm...I don't know what you mean exactly. I found these matches: "
         for result in title:
           response = response + "\n " + result[1]
         response = response + "\nWhich did you mean? (Or say Nevermind to move on!)"
         self.disambiguate = True
         self.disambiguateList = title
-
         return response
 
 
@@ -533,10 +446,6 @@ class Chatbot:
     #############################################################################
     # 3. Movie Recommendation helper functions                                  #
     #############################################################################
-
-    # from piazza - "If you're going to use the Porter Stemmer,
-    # we recommend stemming the words in the sentiment lexicon
-    # as well as the words in the input sentence."
 
     def read_data(self):
       """Reads the ratings matrix from file"""

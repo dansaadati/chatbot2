@@ -377,6 +377,12 @@ class Chatbot:
 
 
       ignoreValidation = False
+      if(input == "Yes" or input == "No"):
+        ignoreValidation = True
+
+      title = None
+      titleIndex = -6
+
         
       if(self.disambiguate):
         titleIndex, title = self.disambiguateLine(input)
@@ -384,13 +390,13 @@ class Chatbot:
           return "Okay, tell me more about the movies you've watched!"
         elif(titleIndex == -2):
           response =  "Hmm... that's not clear enough. Do you mind specifying which movie? Here is the list again:"
-          for result in title:
-            response = response + "\n " + result[1]
+          for index, result in self.disambiguateList:
+            response = response + "\n " + result
           return response
         elif(titleIndex == -3):
           response = "I couldn't seem to find anything with that info. Mind trying again? Here is the list again"
-          for result in title:
-            response = response + "\n " + result[1]
+          for index, result in self.disambiguateList:
+            response = response + "\n " + result
           return response
         else:
           ignoreValidation = True

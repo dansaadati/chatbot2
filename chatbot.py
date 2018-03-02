@@ -57,6 +57,11 @@ class Chatbot:
       for word in intensifierList:
         self.intensifiers.add(self.p.stem(word))
 
+
+      # thresholds
+      self.loveThreshold = 3.0
+      self.likeThreshold = 1.0
+
     #############################################################################
     # 1. WARM UP REPL
     #############################################################################
@@ -122,16 +127,16 @@ class Chatbot:
     def evaluateSentiment(self, title, line):
       posScore = 0
       negScore = 0
-      lam = 1.0
+      # lam = 1.0
       mult = 1
       
-
       removed = re.sub(r'[\"](.*?)[\"]', '', line)
       if self.is_turbo == True:
-        # remove year argument from end
-        title = title.rsplit(' ', 1)[0]
-        removed = re.sub(title, '', line)
-        print removed
+        # remove year argument from end, if year is recorded
+        lastWord = title.rsplit(' ', 1)[0]
+        if len(lastWord) == 6 and lastWord[1:-1].isdigit():
+          title = title.rsplit(' ', 1)[0]
+          removed = re.sub(title, '', line)
 
       negation = ['no', 'not', 'none', 'never', 'hardly', 'scarcely',
         'n\'t', 'didn\'t', 'ain\'t',
@@ -141,8 +146,6 @@ class Chatbot:
 
       # Lemmetize the sentence
       line = self.lemonizeLine(removed)
-
-      print line
 
       # Set negation state and calculate score
       negating = False
@@ -181,17 +184,33 @@ class Chatbot:
         if set(word) & punctuation:
           negating = False
       
-      if negScore == 0:
-        posNegRatio = posScore
-      else:
-        posNegRatio = float(posScore) / float(negScore)
-      
-      print posNegRatio
 
-      if posNegRatio >= lam:
-        return 'pos'
+      totalScore = posScore - negScore
+      if totalScore == 0:
+        return 'pos', 'Yeah, ' + title + ' could have really swung either way.'
+      if totalScore >= self.loveThreshold:
+        return 'pos', 'Wow, you seem to a huge fan of ' + title + '! I thought it was great too.'
+      elif totalScore >= self.likeThreshold:
+        return 'pos', 'Yeah, ' + title + ' was a pretty solid film. My friends and I had a great time with it.'
+      elif totalScore >= -1 * self.likeThreshold:
+        return 'neg', 'Oh right, I wasn\'t the biggest fan of ' + title + ' either. Glad we think alike!'
+      elif totalScore >= -1 * self.loveThreshold:
+        return 'neg', 'You\'re darn right about that. ' + title + ' was a complete and utter trainwreck!'
       else:
-        return 'neg'
+        return '?', 'So, how exactly did you feel about ' + title + '?'
+
+
+      # if negScore == 0:
+      #   posNegRatio = posScore
+      # else:
+      #   posNegRatio = float(posScore) / float(negScore)
+      
+      # print posNegRatio
+
+      # if posNegRatio >= lam:
+      #   return 'pos'
+      # else:
+      #   return 'neg'
 
     def grabAndValidateMovieTitle(self, line):
       lineArr = line.split(' ');
@@ -387,10 +406,10 @@ class Chatbot:
       # calling other functions. Although modular code is not graded, it is       #
       # highly recommended                                                        #
       #############################################################################
-      if self.is_turbo == True:
-        response = 'processed %s in creative mode!!' % input
-      else:
-        response = 'processed %s in starter mode' % input
+      # if self.is_turbo == True:
+      #   response = 'processed %s in creative mode!!' % input
+      # else:
+      #   response = 'processed %s in starter mode' % input
 
       ignoreValidation = False
       if input == "Yes" or input == "No":
@@ -448,7 +467,7 @@ class Chatbot:
 
       # IF VALID/NO ERRORS, EVALUATE SENTIMENT
       if title != None:
-        sentiment = self.evaluateSentiment(title, input)
+        sentiment, sampleResponse = self.evaluateSentiment(title, input)
       else:
         if input != "Yes" and input != "No":
           return "Do not understand"    
@@ -458,12 +477,13 @@ class Chatbot:
         self.currentUserRatings.append((titleIndex, 1 if sentiment == 'pos' else -1))
         self.recommendCount = 0
       if len(self.currentUserRatings) < self.minimumDataPoints and title != None:
-        if sentiment == 'pos':
-          response = "Glad to hear you had good things to say about " + title + "! Tell me a bit more about other movies you've watched!"
-        else:
-          response = "Oh, I'll keep note that you weren't really feeling " + title + ". Please tell me a bit more about another movie you've watched."
-      elif(len(self.currentUserRatings) == self.minimumDataPoints and not self.recommendationPrompt):
-        response = "Thanks for sharing your movie preferences. I can now make a recommendation! You should consider watching " 
+        response = sampleResponse
+        # if sentiment == 'pos':
+        #   response = "Glad to hear you had good things to say about " + title + "! Tell me a bit more about other movies you've watched!"
+        # else:
+        #   response = "Oh, I'll keep note that you weren't really feeling " + title + ". Please tell me a bit more about another movie you've watched."
+      if(len(self.currentUserRatings) == self.minimumDataPoints and not self.recommendationPrompt):
+        response += "Thanks for sharing your movie preferences. I can now make a recommendation! You should consider watching " 
       elif(len(self.currentUserRatings) > self.minimumDataPoints and title != None):
         if(sentiment == 'pos'):
           response = "I'll note you felt good about " + title + "."

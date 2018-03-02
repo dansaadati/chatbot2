@@ -154,7 +154,16 @@ class Chatbot:
 
     def grabAndValidateMovieTitle(self, line):
  
-
+      lineArr = line.split(' ');
+      print(lineArr)
+      newLine = []
+      for word in lineArr:
+        if(word == "I"):
+          newLine.append('I')
+        else:
+          newLine.append(word)
+      line = ' '.join(newLine)
+      print(line)
 
       titleReg = re.compile('[\"](.*?)[\"]')
       results = re.findall(titleReg, line)
@@ -221,6 +230,9 @@ class Chatbot:
           i = i + 1
           if(i == len(line)):
             break
+
+
+
 
         titles.sort(key=len, reverse=True)
         

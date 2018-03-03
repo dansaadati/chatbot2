@@ -103,6 +103,10 @@ class Chatbot:
                                       '%s was by far one of the worst movies I\'ve watched too... ',
                                       'Oof! Remind me to never bring up %s around you... It\'s definitely no good.']
 
+      self.arbitraryStatements = ['You\'re a darling, and I\'d love to help you figure out which movie WE can watc--I mean, you can watch...  Please tell me a bit more about movies you\'ve seen. Remember to surround movie titles with quotation marks!',
+                                  'Hmm, it\'s been a pretty off day for me and I\'m not super sure what you mean. Can we talk a bit more about movies?', 
+                                  'Wow, you\'re an interesting one! I\'d love to chat more about movies, though! Let\'s stay on topic.']
+
 
 
 
@@ -166,12 +170,9 @@ class Chatbot:
 
     def evaluateSentiment(self, title, line, fromDisambiguatedLine):
 
-      # print(line)
-      # print(title)
 
       posScore = 0
       negScore = 0
-      # lam = 1.0
       mult = 1
 
       removed = re.sub(r'[\"](.*?)[\"]', '', line)
@@ -186,14 +187,12 @@ class Chatbot:
         for i in xrange(0, len(lineArr)):
           lineArr[i] = lineArr[i].lower()
 
-        # print(titleArr)
-        # print(lineArr)
+
 
         for word in lineArr:
           if(word not in titleArr):
             newLine.append(word)
 
-        # print(newLine)
 
 
 
@@ -229,7 +228,6 @@ class Chatbot:
           negating = not negating
 
         if word in self.veryPositive:
-          # print(word)
           if negating:
               negScore += mult * 1
           else:
@@ -269,7 +267,6 @@ class Chatbot:
 
       self.nonQuoteTitle = False
       randIndex = random.randint(0, 2)
-      print randIndex
       if totalScore == 0:
         return '?', self.unsureStatements[randIndex] % title
       if totalScore >= self.loveThreshold:
@@ -289,7 +286,6 @@ class Chatbot:
 
 
 
-      # print(lineArr)
       newLine = []
       for word in lineArr:
         if(word == "I"):
@@ -297,7 +293,6 @@ class Chatbot:
         else:
           newLine.append(word)
       line = ' '.join(newLine)
-      # print(line)
 
       titleReg = re.compile('[\"](.*?)[\"]')
       results = re.findall(titleReg, line)
@@ -396,8 +391,7 @@ class Chatbot:
           title = title.lower()
           for entryTitle, index in allTitlesLowerCase:
             if(title == entryTitle):
-              # print(title)
-              # print(self.titles[index][0])
+
               count = 0
               for otherTitle, index2 in allTitlesLowerCase:
                 if(otherTitle == title):
@@ -547,9 +541,17 @@ class Chatbot:
 
 
 
-      print('hello')
 
 
+    def arbitraryInput(self, input):
+      if 'Can you'.lower() in input.lower():
+        return 'Ah, in case you weren\'t sure, I am Flirtbot and I am here to recommend you movies! I\'m unfortunately not good for much else. Can\'t do a whole lot for you :('
+      if 'What is'.lower() in input.lower():
+        return 'Hmm, honestly I\'m not too smart about those types of things. Maybe throw a few movies at me and I can help you out?'
+
+      randomNumber = random.randint(0, 2)
+
+      return self.arbitraryStatements[randomNumber]
 
     def process(self, input):
       """Takes the input string from the REPL and call delegated functions
@@ -627,7 +629,7 @@ class Chatbot:
         return "Looks like you may have multiple titles there! Please respond with just one movie at a time. I want to deep dive into everything you have to say slowly, so I can learn as much about you as I can!"
       if titleIndex == -2:
         if len(self.currentUserRatings) < self.minimumDataPoints:
-          return "You're a darling, and I'd love to help you figure out which movie we can watch together-I mean, you can watch... Please tell me a bit more about movies you've seen. Remember to surround movie titles with quotation marks!"
+          return self.arbitraryInput(input)
       if titleIndex == -3:
         return "I swear I'm not usually like this haha, it must be the nerves! But I don't think I\'ve heard of that movie before. Are you sure you didn't mix up the name maybe?"
 
@@ -636,7 +638,8 @@ class Chatbot:
         response = "I know exactly what you mean!! Well, not really... A few titles come to mind when you mention that movie. Which one are you talking about?"
         for result in title:
           response = response + "\n " + result[1]
-        response = response + "\nJust type in the year for me and I'll be able to help you out, dear! Or, we don't have to go down this rabbithole - just type 'Nevermind' and we can move onto the next topic."
+        response = response + "\nJust type in either the year, full title, roman numeral, or number, and I'll be able to help you out, dear! Or, we don't have to go down this rabbithole - just type 'Nevermind' and we can move onto the next topic."
+        response = response + ""
         self.disambiguate = True
         self.disambiguateList = title
         self.disambiguateOrigLine = input
@@ -671,19 +674,16 @@ class Chatbot:
           return response
       else:
         if input.lower() != "Yes".lower() and input.lower() != "No".lower() and not self.sentimentReprompt:
-          # if(input.lower() == "Random!".lower()):
-            # print("Returning a random movie")
-          return "Hmm, it's been an off day for me. Can you clarify what you meant?"    
+          return self.arbitraryInput(input)    
 
       if(title == None and self.sentimentReprompt == True):
         sentiment, sampleResponse = self.evaluateSentiment(self.titles[self.titleIndex][0], input, True)
         if sentiment == "?":
-          #Reprompt, but retain Title Index
-          #Can you tell me how you felt in more detail?
+          # Reprompt, but retain Title Index
+          # Can you tell me how you felt in more detail?
 
           response = sampleResponse + " Mind sharing more details about what you thought?"
           self.sentimentReprompt = True
-          self.titleIndex = titleIndex
 
           return response
 
@@ -856,10 +856,20 @@ class Chatbot:
     def intro(self): #INITIALIZATION
 
       return """
-      Your task is to implement the chatbot as detailed in the PA6 instructions.
-      Remember: in the starter mode, movie names will come in quotation marks and
-      expressions of sentiment will be simple!
-      Write here the description for your own chatbot!
+      This is Flirtbot. It will give you movie recommendations, but can't help but flirting along the way. 
+      Along with the base starter requirements, we implemented additional features:
+
+      - We identify movies without quotations!
+      - We have fine-grained sentiment extraction!
+      - We spell-check quoted titles!
+      - We disambiguate confusing titles! 
+      - We respond to arbitrary input!
+      - Our bot is pretty cute and fluent!
+      - We made an extra custom feature, where our bot will help recommend you a Random movie based off a picked genre.
+      Simply type in 'Random!' and you can check it out!
+      - We made another custom feature where our bot won't give you the same recommendation twice.
+
+
       """
 
 

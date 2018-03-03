@@ -84,6 +84,24 @@ class Chatbot:
       self.likeThreshold = 1.0
 
 
+      self.unsureStatements = ['Yeah, %s could have really swung either way. Unlike the way I feel about you, which is definitely entirely in the positive.',
+                               'Hmm, it seems you\'re pretty unsure about %s... don\'t worry, I\'ll help you out!',
+                               'Oh wow! I would love to know more on how you feel about %s... I\'m unsure about it.' ]
+      self.veryPositiveStatements = ['Wow, you seem to a huge fan of %s! I thought it was great too... we really think alike don\'t we?',
+                               'You have amazing taste, you know? %s is definitely an absolutely fantastic film! I loved it too!',
+                               'I\'m so glad to that you shared a movie you love so much with me! %s is great!' ]
+      self.positiveStatements = ['Yeah, %s was a pretty solid film. My friends and I had a great time with it. I feel like if we watched it together I would feel better about it...',
+                               '%s was an enjoyable watch for me too! I\'m glad to know you like it!',
+                               'Yeah, %s is a classic. Great for a popcorn night. Glad you like it too.']
+      self.positiveStatements = ['Yeah, %s was a pretty solid film. My friends and I had a great time with it. I feel like if we watched it together I would feel better about it...',
+                               '%s was an enjoyable watch for me too! I\'m glad to know you like it!',
+                               'Yeah, %s is a classic. Great for a popcorn night. Glad you like it too.']
+      self.negativeStatements = ['Oh right, I wasn\'t the biggest fan of %s either. What in the world was that director thinking, right?! Jeez, you\'re always so on point with your ideas.',
+                                 'Yeah, %s ended up being a bit of a disappointment. :(',
+                                 'It\'s sad to hear that you felt that way about %s, but I totally understand. It was close to being decent']
+      self.veryNegativeStatements = ['You\'re darn right about that. %s was a complete and utter trainwreck! Just like how I would be without you.',
+                                      '%s was by far one of the worst movies I\'ve watched too... ',
+                                      'Oof! Remind me to never bring up %s around you... It\'s definitely no good.']
 
 
 
@@ -250,16 +268,18 @@ class Chatbot:
         totalScore *= 3
 
       self.nonQuoteTitle = False
+      randIndex = random.randint(0, 2)
+      print randIndex
       if totalScore == 0:
-        return '?', 'Yeah, ' + title + ' could have really swung either way. Unlike the way I feel about you, which is definitely entirely in the positive.'
+        return '?', self.unsureStatements[randIndex] % title
       if totalScore >= self.loveThreshold:
-        return 'pos', 'Wow, you seem to a huge fan of ' + title + '! I thought it was great too... we really think alike don\'t we?'
+        return 'pos', self.veryPositiveStatements[randIndex] % title
       elif totalScore >= self.likeThreshold:
-        return 'pos', 'Yeah, ' + title + ' was a pretty solid film. My friends and I had a great time with it. I feel like if we watched it together I would feel better about it...'
+        return 'pos', self.positiveStatements[randIndex] % title
       elif totalScore >= -1 * self.likeThreshold:
-        return 'neg', 'Oh right, I wasn\'t the biggest fan of ' + title + ' either. What in the world was that director thinking, right?! Jeez, you\'re always so on point with your ideas.'
+        return 'neg', self.negativeStatements[randIndex] % title
       elif totalScore >= -1 * self.loveThreshold:
-        return 'neg', 'You\'re darn right about that. ' + title + ' was a complete and utter trainwreck! Just like how I would be without you.'
+        return 'neg', self.veryNegativeStatements[randIndex] % title
       else:
         return '?', 'So, how exactly do you feel about me--- I mean, ' + title + '?'
 
@@ -569,12 +589,6 @@ class Chatbot:
           for genre in self.genres:
             response = response + "\n" + genre
           return response
-      
-
-
-
-
-
 
 
       if(self.sentimentReprompt):
@@ -667,7 +681,7 @@ class Chatbot:
           #Reprompt, but retain Title Index
           #Can you tell me how you felt in more detail?
 
-          response = sampleResponse + " But hmmm... I'm not entirely sure how you felt. Mind sharing more details?"
+          response = sampleResponse + " Mind sharing more details about what you thought?"
           self.sentimentReprompt = True
           self.titleIndex = titleIndex
 
